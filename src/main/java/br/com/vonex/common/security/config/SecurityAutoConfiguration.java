@@ -2,6 +2,7 @@ package br.com.vonex.common.security.config;
 
 import br.com.vonex.common.security.interceptor.PermissionInterceptor;
 import br.com.vonex.common.security.service.JwtTokenValidator;
+import br.com.vonex.common.security.service.OrganizationalFilterService;
 import br.com.vonex.common.security.service.PermissionValidationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -54,18 +56,36 @@ public class SecurityAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "accessControlWebClient")
+    public WebClient accessControlWebClient(
+            @Value("${services.access-control.url:http://localhost:8081}") String accessControlUrl) {
+        log.info("✅ Creating accessControlWebClient bean with URL: {}", accessControlUrl);
+        return WebClient.builder()
+                .baseUrl(accessControlUrl)
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OrganizationalFilterService organizationalFilterService(WebClient accessControlWebClient) {
+        log.info("✅ Creating OrganizationalFilterService bean");
+        return new OrganizationalFilterService(accessControlWebClient);
+    }
+
+    @Bean
     public WebMvcConfigurer permissionInterceptorConfigurer(PermissionInterceptor permissionInterceptor) {
         log.info("🛡️ Configuring PermissionInterceptor");
         return new WebMvcConfigurer() {
             @Override
             public void addInterceptors(InterceptorRegistry registry) {
-                log.info("🛡️ Registering interceptor for /api/**");
+                log.info("🛡️ Registering interceptor for /**");
                 registry.addInterceptor(permissionInterceptor)
-                        .addPathPatterns("/api/**")
+                        .addPathPatterns("/**")
                         .excludePathPatterns(
                                 "/actuator/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/error"
                         );
             }
         };
