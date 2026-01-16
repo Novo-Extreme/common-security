@@ -36,11 +36,3 @@ jobs:
           name: common-security-jar
           path: target/*.jar
           retention-days: 7
-
-      - name: Generate Test Report
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Maven Tests
-          path: target/surefire-reports/*.xml
-          reporter: java-junit
