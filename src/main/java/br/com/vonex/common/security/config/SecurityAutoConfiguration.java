@@ -1,6 +1,7 @@
 package br.com.vonex.common.security.config;
 
 import br.com.vonex.common.security.interceptor.PermissionInterceptor;
+import br.com.vonex.common.security.config.filter.SecurityFilter;
 import br.com.vonex.common.security.service.JwtTokenValidator;
 import br.com.vonex.common.security.service.OrganizationalFilterService;
 import br.com.vonex.common.security.service.PermissionValidationService;
@@ -89,5 +90,12 @@ public class SecurityAutoConfiguration {
                         );
             }
         };
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SecurityFilter securityFilter(JwtTokenValidator jwtTokenValidator) {
+        log.info("✅ Creating SecurityFilter bean");
+        return new SecurityFilter(jwtTokenValidator);
     }
 }
