@@ -31,16 +31,8 @@ jobs:
         run: mvn verify
 
       - name: Upload JAR Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: common-security-jar
           path: target/*.jar
           retention-days: 7
-
-      - name: Generate Test Report
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Maven Tests
-          path: target/surefire-reports/*.xml
-          reporter: java-junit
