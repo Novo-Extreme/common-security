@@ -1,3 +1,4 @@
+// SecurityAutoConfiguration.java
 package br.com.vonex.common.security.config;
 
 import br.com.vonex.common.security.interceptor.PermissionInterceptor;
