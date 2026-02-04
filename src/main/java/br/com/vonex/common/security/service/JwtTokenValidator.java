@@ -10,10 +10,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class JwtTokenValidator {
@@ -44,6 +41,9 @@ public class JwtTokenValidator {
             List<SalesChannelDTO> salesChannels = Collections.emptyList();
             List<SalesSegmentDTO> salesSegments = Collections.emptyList();
 
+            List<Long> commercialAgentIds = Collections.emptyList();
+            List<Long> afterSalesIds = Collections.emptyList();
+
             if (!orgContextClaim.isNull()) {
                 try {
                     Map<String, Object> orgContext = orgContextClaim.asMap();
@@ -64,8 +64,16 @@ public class JwtTokenValidator {
                         salesSegments = parseSalesSegments((List<Map<String, Object>>) orgContext.get("salesSegments"));
                     }
 
-                    log.debug("Extracted organizational context for user {}: {} portfolios, {} teams, {} channels, {} segments",
-                            userId, portfolios.size(), teams.size(), salesChannels.size(), salesSegments.size());
+                    if (orgContext.containsKey("commercialAgentIds")) {
+                        commercialAgentIds = parseLongList(orgContext.get("commercialAgentIds"));
+                    }
+
+                    if (orgContext.containsKey("afterSalesIds")) {
+                        afterSalesIds = parseLongList(orgContext.get("afterSalesIds"));
+                    }
+
+                    log.debug("Extracted organizational context for user {}: {} portfolios, {} teams, {} agents, {} after-sales",
+                            userId, portfolios.size(), teams.size(), commercialAgentIds.size(), afterSalesIds.size());
 
                 } catch (Exception e) {
                     log.warn("Error parsing organizational context from token: {}", e.getMessage());
@@ -82,6 +90,8 @@ public class JwtTokenValidator {
                     .teams(teams)
                     .salesChannels(salesChannels)
                     .salesSegments(salesSegments)
+                    .commercialAgentIds(commercialAgentIds)
+                    .afterSalesIds(afterSalesIds)
                     .build();
 
         } catch (JWTVerificationException e) {
@@ -194,5 +204,21 @@ public class JwtTokenValidator {
         if (value == null) return false;
         if (value instanceof Boolean) return (Boolean) value;
         return false;
+    }
+
+    private List<Long> parseLongList(Object value) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+
+        if (value instanceof List<?> list) {
+            return list.stream()
+                    .filter(Objects::nonNull)
+                    .map(this::getLongValue)
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
+
+        return Collections.emptyList();
     }
 }

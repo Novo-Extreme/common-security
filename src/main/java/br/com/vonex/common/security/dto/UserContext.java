@@ -25,6 +25,9 @@ public class UserContext {
     private List<ClientPortfolioDTO> portfolios;
     private List<TeamDTO> teams;
 
+    private List<Long> commercialAgentIds;
+    private List<Long> afterSalesIds;
+
     public boolean hasPermission(String permission) {
         return permissions != null && permissions.contains(permission);
     }
@@ -137,5 +140,23 @@ public class UserContext {
                 (teams != null && !teams.isEmpty()) ||
                 (salesChannels != null && !salesChannels.isEmpty()) ||
                 (salesSegments != null && !salesSegments.isEmpty());
+    }
+
+    public List<Long> getCommercialAgentIds() {
+        return commercialAgentIds != null ? commercialAgentIds : Collections.emptyList();
+    }
+
+    public List<Long> getAfterSalesIds() {
+        return afterSalesIds != null ? afterSalesIds : Collections.emptyList();
+    }
+
+    public boolean hasCommercialAgent(Long commercialAgentId) {
+        if (commercialAgentId == null) return false;
+        return commercialAgentIds != null && commercialAgentIds.contains(commercialAgentId);
+    }
+
+    public boolean hasAfterSales(Long afterSalesId) {
+        if (afterSalesId == null) return false;
+        return afterSalesIds != null && afterSalesIds.contains(afterSalesId);
     }
 }
