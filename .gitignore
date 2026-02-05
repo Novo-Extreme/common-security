@@ -39,3 +39,6 @@ data/
 *.html
 *.jar
 *.txt
+
+### Claude Code ###
+.clauderc

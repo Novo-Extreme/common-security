@@ -7,7 +7,7 @@
 
     <groupId>br.com.vonex</groupId>
     <artifactId>common-security</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.8</version>
     <packaging>jar</packaging>
 
     <name>Common Security Library</name>
