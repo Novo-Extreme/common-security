@@ -55,20 +55,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Set version from tag
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          mvn versions:set -DnewVersion=$VERSION
-          mvn versions:commit  # ← Remove backup files
-
-      - name: Commit version change
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add pom.xml
-          git commit -m "chore: bump version to $VERSION" || true
-          git push origin HEAD:main || true
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
