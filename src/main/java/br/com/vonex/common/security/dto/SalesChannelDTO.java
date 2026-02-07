@@ -13,6 +13,7 @@ public class SalesChannelDTO {
     private Long id;
     private String code;
     private String name;
+    private String channelType;
     private String description;
     private Boolean active;
 }

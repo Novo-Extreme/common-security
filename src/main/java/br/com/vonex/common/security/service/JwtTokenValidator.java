@@ -163,6 +163,7 @@ public class JwtTokenValidator {
                         .id(getLongValue(c.get("id")))
                         .code((String) c.get("code"))
                         .name((String) c.get("name"))
+                        .channelType((String) c.get("channelType"))
                         .build());
             } catch (Exception e) {
                 log.warn("Error parsing sales channel: {}", e.getMessage());

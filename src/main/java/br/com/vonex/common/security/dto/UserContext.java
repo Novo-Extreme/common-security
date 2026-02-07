@@ -159,4 +159,13 @@ public class UserContext {
         if (afterSalesId == null) return false;
         return afterSalesIds != null && afterSalesIds.contains(afterSalesId);
     }
+
+    public boolean isExternalChannel() {
+        return salesChannels != null && salesChannels.stream()
+                .anyMatch(c -> "EXTERNAL".equals(c.getChannelType()));
+    }
+
+    public boolean isInternalChannel() {
+        return !isExternalChannel();
+    }
 }
