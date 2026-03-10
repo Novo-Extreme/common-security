@@ -43,6 +43,7 @@ public class JwtTokenValidator {
 
             List<Long> commercialAgentIds = Collections.emptyList();
             List<Long> afterSalesIds = Collections.emptyList();
+            List<Long> productSegmentIds = Collections.emptyList();
 
             if (!orgContextClaim.isNull()) {
                 try {
@@ -72,6 +73,10 @@ public class JwtTokenValidator {
                         afterSalesIds = parseLongList(orgContext.get("afterSalesIds"));
                     }
 
+                    if (orgContext.containsKey("productSegmentIds")) {
+                        productSegmentIds = parseLongList(orgContext.get("productSegmentIds"));
+                    }
+
                     log.debug("Extracted organizational context for user {}: {} portfolios, {} teams, {} agents, {} after-sales",
                             userId, portfolios.size(), teams.size(), commercialAgentIds.size(), afterSalesIds.size());
 
@@ -92,6 +97,7 @@ public class JwtTokenValidator {
                     .salesSegments(salesSegments)
                     .commercialAgentIds(commercialAgentIds)
                     .afterSalesIds(afterSalesIds)
+                    .productSegmentIds(productSegmentIds)
                     .build();
 
         } catch (JWTVerificationException e) {
