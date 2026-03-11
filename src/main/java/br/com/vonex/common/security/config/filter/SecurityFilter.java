@@ -41,9 +41,13 @@ public class SecurityFilter extends OncePerRequestFilter {
                 String token = jwtTokenValidator.extractTokenFromHeader(authHeader);
                 UserContext userContext = jwtTokenValidator.validateAndExtractContext(token);
 
-                var authorities = userContext.getPermissions().stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+                var authorities = userContext.getPermissions().isEmpty()
+                        ? userContext.getRoles().stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .collect(Collectors.toList())
+                        : userContext.getPermissions().stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
 
                 var authentication = new UsernamePasswordAuthenticationToken(
                         userContext.getLogin(),

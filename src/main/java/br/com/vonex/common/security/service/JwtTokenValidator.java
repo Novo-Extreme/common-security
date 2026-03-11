@@ -32,7 +32,14 @@ public class JwtTokenValidator {
             String login = jwt.getClaim("login").asString();
             String name = jwt.getClaim("name").asString();
             List<String> roles = jwt.getClaim("roles").asList(String.class);
-            List<String> permissions = jwt.getClaim("permissions").asList(String.class);
+            List<String> permissions = Collections.emptyList();
+            Claim permissionsClaim = jwt.getClaim("permissions");
+            if (!permissionsClaim.isNull() && !permissionsClaim.isMissing()) {
+                List<String> parsed = permissionsClaim.asList(String.class);
+                if (parsed != null) {
+                    permissions = parsed;
+                }
+            }
 
             Claim orgContextClaim = jwt.getClaim("organizationalContext");
 
@@ -49,15 +56,31 @@ public class JwtTokenValidator {
                 try {
                     Map<String, Object> orgContext = orgContextClaim.asMap();
 
-                    if (orgContext.containsKey("portfolios")) {
+                    if (orgContext.containsKey("portfolioIds")) {
+                        List<Long> ids = parseLongList(orgContext.get("portfolioIds"));
+                        portfolios = ids.stream()
+                            .map(id -> ClientPortfolioDTO.builder().id(id).build())
+                            .toList();
+                    } else if (orgContext.containsKey("portfolios")) {
                         portfolios = parsePortfolios((List<Map<String, Object>>) orgContext.get("portfolios"));
                     }
 
-                    if (orgContext.containsKey("teams")) {
+                    if (orgContext.containsKey("teamIds")) {
+                        List<Long> ids = parseLongList(orgContext.get("teamIds"));
+                        teams = ids.stream()
+                            .map(id -> TeamDTO.builder().id(id).build())
+                            .toList();
+                    } else if (orgContext.containsKey("teams")) {
                         teams = parseTeams((List<Map<String, Object>>) orgContext.get("teams"));
                     }
 
-                    if (orgContext.containsKey("salesChannels")) {
+                    if (orgContext.containsKey("isExternalChannel")) {
+                        Object val = orgContext.get("isExternalChannel");
+                        boolean isExternal = val instanceof Boolean && (Boolean) val;
+                        if (isExternal) {
+                            salesChannels = List.of(SalesChannelDTO.builder().channelType("EXTERNAL").build());
+                        }
+                    } else if (orgContext.containsKey("salesChannels")) {
                         salesChannels = parseSalesChannels((List<Map<String, Object>>) orgContext.get("salesChannels"));
                     }
 

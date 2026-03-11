@@ -40,31 +40,31 @@ public class PermissionInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
 
-        log.info("🔍 PermissionInterceptor triggered for: {} {}",
+        log.info("PermissionInterceptor triggered for: {} {}",
                 request.getMethod(), request.getRequestURI());
 
         try {
             String authHeader = request.getHeader("Authorization");
-            log.debug("📋 Authorization header: {}", authHeader != null ? "Present" : "Missing");
+            log.debug("Authorization header: {}", authHeader != null ? "Present" : "Missing");
 
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = jwtValidator.extractTokenFromHeader(authHeader);
-                log.debug("🔑 Token extracted, validating...");
+                log.debug("Token extracted, validating...");
 
                 UserContext userContext = jwtValidator.validateAndExtractContext(token);
 
                 request.setAttribute(USER_CONTEXT_ATTRIBUTE, userContext);
-                log.info("✅ UserContext populated for user: {} (userId: {}, portfolios: {})",
+                log.info("UserContext populated for user: {} (userId: {}, portfolios: {})",
                         userContext.getLogin(),
                         userContext.getUserId(),
                         userContext.getPortfolios().size());
             } else {
-                log.warn("⚠️ No Bearer token found in Authorization header");
+                log.warn("No Bearer token found in Authorization header");
             }
         } catch (InvalidTokenException e) {
-            log.error("❌ Invalid token: {}", e.getMessage());
+            log.error("Invalid token: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("❌ Unexpected error extracting UserContext: {}", e.getMessage(), e);
+            log.error("Unexpected error extracting UserContext: {}", e.getMessage(), e);
         }
 
         if (!(handler instanceof HandlerMethod handlerMethod)) {
@@ -77,16 +77,29 @@ public class PermissionInterceptor implements HandlerInterceptor {
         }
 
         if (annotation == null) {
-            log.debug("✓ No @RequiresPermission annotation, allowing access");
+            log.debug("No @RequiresPermission annotation, allowing access");
             return true;
         }
 
         UserContext userContext = (UserContext) request.getAttribute(USER_CONTEXT_ATTRIBUTE);
 
         if (userContext == null) {
-            log.warn("🚫 @RequiresPermission presente mas UserContext não encontrado");
+            log.warn("@RequiresPermission present but UserContext not found");
             writeErrorResponse(response, request, HttpServletResponse.SC_UNAUTHORIZED,
                     "Não Autorizado", "Token de autenticação não encontrado ou inválido", null);
+            return false;
+        }
+
+        if (userContext.isAdmin()) {
+            log.debug("Admin user {} - bypassing permission check", userContext.getUserId());
+            return true;
+        }
+
+        if (userContext.getPermissions() == null || userContext.getPermissions().isEmpty()) {
+            log.warn("No permissions in token for non-admin user {}. Required: {}",
+                    userContext.getUserId(), String.join(", ", annotation.value()));
+            writeErrorResponse(response, request, HttpServletResponse.SC_FORBIDDEN,
+                    "Acesso Negado", "Permissões não disponíveis no token. Faça login novamente.", userContext);
             return false;
         }
 
@@ -98,7 +111,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
             );
 
             if (!hasPermission) {
-                log.warn("🚫 Acesso negado: {} {} - User: {\"userId\":{},\"name\":\"{}\"}",
+                log.warn("Access denied: {} {} - User: {\"userId\":{},\"name\":\"{}\"}",
                         request.getMethod(), request.getRequestURI(),
                         userContext.getUserId(), userContext.getLogin());
                 throw new PermissionDeniedException(annotation.message());
