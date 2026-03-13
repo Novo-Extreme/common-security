@@ -50,7 +50,6 @@ public class JwtTokenValidator {
 
             List<Long> commercialAgentIds = Collections.emptyList();
             List<Long> afterSalesIds = Collections.emptyList();
-            List<Long> productSegmentIds = Collections.emptyList();
             String memberRole = null;
 
             if (!orgContextClaim.isNull()) {
@@ -97,10 +96,6 @@ public class JwtTokenValidator {
                         afterSalesIds = parseLongList(orgContext.get("afterSalesIds"));
                     }
 
-                    if (orgContext.containsKey("productSegmentIds")) {
-                        productSegmentIds = parseLongList(orgContext.get("productSegmentIds"));
-                    }
-
                     if (orgContext.containsKey("memberRole")) {
                         Object roleVal = orgContext.get("memberRole");
                         if (roleVal instanceof String) {
@@ -128,7 +123,6 @@ public class JwtTokenValidator {
                     .salesSegments(salesSegments)
                     .commercialAgentIds(commercialAgentIds)
                     .afterSalesIds(afterSalesIds)
-                    .productSegmentIds(productSegmentIds)
                     .memberRole(memberRole)
                     .build();
 

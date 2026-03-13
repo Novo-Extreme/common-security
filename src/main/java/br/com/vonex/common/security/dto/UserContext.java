@@ -27,7 +27,6 @@ public class UserContext {
 
     private List<Long> commercialAgentIds;
     private List<Long> afterSalesIds;
-    private List<Long> productSegmentIds;
 
     private String memberRole;
 
@@ -161,14 +160,6 @@ public class UserContext {
     public boolean hasAfterSales(Long afterSalesId) {
         if (afterSalesId == null) return false;
         return afterSalesIds != null && afterSalesIds.contains(afterSalesId);
-    }
-
-    public List<Long> getProductSegmentIds() {
-        return productSegmentIds != null ? productSegmentIds : Collections.emptyList();
-    }
-
-    public boolean hasProductSegmentRestriction() {
-        return productSegmentIds != null && !productSegmentIds.isEmpty();
     }
 
     public boolean shouldUseAfterSalesForAccess() {
