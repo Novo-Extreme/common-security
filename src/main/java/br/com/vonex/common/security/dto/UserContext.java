@@ -28,6 +28,8 @@ public class UserContext {
     private List<Long> commercialAgentIds;
     private List<Long> afterSalesIds;
 
+    private String memberRole;
+
     public boolean hasPermission(String permission) {
         return permissions != null && permissions.contains(permission);
     }
@@ -158,6 +160,11 @@ public class UserContext {
     public boolean hasAfterSales(Long afterSalesId) {
         if (afterSalesId == null) return false;
         return afterSalesIds != null && afterSalesIds.contains(afterSalesId);
+    }
+
+    public boolean shouldUseAfterSalesForAccess() {
+        if (memberRole == null || memberRole.isEmpty()) return true;
+        return !List.of("DIRETOR", "SUPERINTENDENTE", "BACKOFFICE").contains(memberRole);
     }
 
     public boolean isExternalChannel() {
