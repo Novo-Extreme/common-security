@@ -51,10 +51,12 @@ public class JwtTokenValidator {
             List<Long> commercialAgentIds = Collections.emptyList();
             List<Long> afterSalesIds = Collections.emptyList();
             String memberRole = null;
+            boolean customerScoped = false;
 
-            if (!orgContextClaim.isNull()) {
+            if (!orgContextClaim.isNull() && !orgContextClaim.isMissing()) {
                 try {
                     Map<String, Object> orgContext = orgContextClaim.asMap();
+                    customerScoped = true;
 
                     if (orgContext.containsKey("portfolioIds")) {
                         List<Long> ids = parseLongList(orgContext.get("portfolioIds"));
@@ -103,6 +105,13 @@ public class JwtTokenValidator {
                         }
                     }
 
+                    if (orgContext.containsKey("customerScoped")) {
+                        Object scopedVal = orgContext.get("customerScoped");
+                        if (scopedVal instanceof Boolean) {
+                            customerScoped = (Boolean) scopedVal;
+                        }
+                    }
+
                     log.debug("Extracted organizational context for user {}: {} portfolios, {} teams, {} agents, {} after-sales",
                             userId, portfolios.size(), teams.size(), commercialAgentIds.size(), afterSalesIds.size());
 
@@ -124,6 +133,7 @@ public class JwtTokenValidator {
                     .commercialAgentIds(commercialAgentIds)
                     .afterSalesIds(afterSalesIds)
                     .memberRole(memberRole)
+                    .customerScoped(customerScoped)
                     .build();
 
         } catch (JWTVerificationException e) {
