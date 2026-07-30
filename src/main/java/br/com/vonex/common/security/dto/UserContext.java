@@ -29,6 +29,7 @@ public class UserContext {
     private List<Long> afterSalesIds;
 
     private String memberRole;
+    private Boolean customerScoped;
 
     public boolean hasPermission(String permission) {
         return permissions != null && permissions.contains(permission);
@@ -174,5 +175,13 @@ public class UserContext {
 
     public boolean isInternalChannel() {
         return !isExternalChannel();
+    }
+
+    public boolean isCustomerScoped() {
+        return !Boolean.FALSE.equals(customerScoped);
+    }
+
+    public boolean hasCommercialScope() {
+        return !getCommercialAgentIds().isEmpty() || !getAfterSalesIds().isEmpty();
     }
 }
