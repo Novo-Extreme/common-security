@@ -6,6 +6,7 @@ import br.com.vonex.common.security.config.filter.SecurityFilter;
 import br.com.vonex.common.security.service.JwtTokenValidator;
 import br.com.vonex.common.security.service.OrganizationalFilterService;
 import br.com.vonex.common.security.service.PermissionValidationService;
+import br.com.vonex.common.security.service.RolePermissionResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -16,6 +17,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.time.Duration;
 
 @Slf4j
 @AutoConfiguration
@@ -50,11 +53,21 @@ public class SecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public RolePermissionResolver rolePermissionResolver(
+            WebClient accessControlWebClient,
+            @Value("${security.role-permissions.ttl-minutes:10}") long ttlMinutes) {
+        log.info("✅ Creating RolePermissionResolver bean (TTL: {} min)", ttlMinutes);
+        return new RolePermissionResolver(accessControlWebClient, Duration.ofMinutes(ttlMinutes));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public PermissionInterceptor permissionInterceptor(
             JwtTokenValidator jwtTokenValidator,
-            PermissionValidationService permissionValidationService) {
+            PermissionValidationService permissionValidationService,
+            RolePermissionResolver rolePermissionResolver) {
         log.info("✅ Creating PermissionInterceptor bean");
-        return new PermissionInterceptor(jwtTokenValidator, permissionValidationService);
+        return new PermissionInterceptor(jwtTokenValidator, permissionValidationService, rolePermissionResolver);
     }
 
     @Bean
