@@ -6,11 +6,11 @@ import br.com.vonex.common.security.exception.InvalidTokenException;
 import br.com.vonex.common.security.exception.PermissionDeniedException;
 import br.com.vonex.common.security.service.JwtTokenValidator;
 import br.com.vonex.common.security.service.PermissionValidationService;
+import br.com.vonex.common.security.service.RolePermissionResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.method.HandlerMethod;
@@ -18,16 +18,32 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
-@RequiredArgsConstructor
 public class PermissionInterceptor implements HandlerInterceptor {
 
     private final JwtTokenValidator jwtValidator;
     private final PermissionValidationService permissionService;
+    private final RolePermissionResolver rolePermissionResolver;
     private final ObjectMapper objectMapper = createObjectMapper();
+
+    public PermissionInterceptor(JwtTokenValidator jwtValidator,
+                                 PermissionValidationService permissionService,
+                                 RolePermissionResolver rolePermissionResolver) {
+        this.jwtValidator = jwtValidator;
+        this.permissionService = permissionService;
+        this.rolePermissionResolver = rolePermissionResolver;
+    }
+
+    /** Sem resolver: mantém o comportamento anterior (só o claim do token). */
+    public PermissionInterceptor(JwtTokenValidator jwtValidator,
+                                 PermissionValidationService permissionService) {
+        this(jwtValidator, permissionService, null);
+    }
 
     public static final String USER_CONTEXT_ATTRIBUTE = "userContext";
 
@@ -96,10 +112,16 @@ public class PermissionInterceptor implements HandlerInterceptor {
         }
 
         if (userContext.getPermissions() == null || userContext.getPermissions().isEmpty()) {
-            log.warn("No permissions in token for non-admin user {}. Required: {}",
+            // Token sem o claim 'permissions': resolve pelas roles. Se o claim vier (authentication
+            // antigo), ele é usado como está — é o que permite o rollout gradual.
+            resolvePermissionsFromRoles(userContext);
+        }
+
+        if (userContext.getPermissions() == null || userContext.getPermissions().isEmpty()) {
+            log.warn("No permissions resolved for non-admin user {}. Required: {}",
                     userContext.getUserId(), String.join(", ", annotation.value()));
             writeErrorResponse(response, request, HttpServletResponse.SC_FORBIDDEN,
-                    "Acesso Negado", "Permissões não disponíveis no token. Faça login novamente.", userContext);
+                    "Acesso Negado", "Permissões não disponíveis. Faça login novamente.", userContext);
             return false;
         }
 
@@ -128,6 +150,21 @@ public class PermissionInterceptor implements HandlerInterceptor {
                     "Acesso Negado", message, userContext);
             return false;
         }
+    }
+
+    private void resolvePermissionsFromRoles(UserContext userContext) {
+        if (rolePermissionResolver == null) {
+            return;
+        }
+
+        Set<String> resolved = rolePermissionResolver.resolvePermissions(userContext.getRoles());
+        if (resolved.isEmpty()) {
+            return;
+        }
+
+        userContext.setPermissions(new ArrayList<>(resolved));
+        log.debug("Resolved {} permissions from roles {} for user {}",
+                resolved.size(), userContext.getRoles(), userContext.getUserId());
     }
 
     private void writeErrorResponse(HttpServletResponse response, HttpServletRequest request,
