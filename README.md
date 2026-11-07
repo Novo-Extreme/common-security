@@ -90,6 +90,18 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
+## 🔒 Actuator
+
+O `SecurityFilterChain` da lib libera sem token apenas `/actuator/health`, `/actuator/health/**`
+(probes do Kubernetes) e `/actuator/info`. Os demais endpoints do actuator (`env`, `configprops`,
+`heapdump`, `loggers`, `metrics`, `prometheus`...) exigem JWT válido, porque o ingress encaminha
+`/<servico>/actuator/**` para o serviço.
+
+Se o serviço for raspado pelo Prometheus do cluster, ligar `security.actuator.prometheus-public: true`
+**e** bloquear `/<servico>/actuator/prometheus` no ingress: o endpoint deve ficar acessível só pela
+rede interna.
+
 ## 📦 Versões
 
 - **1.0.0** - Versão inicial com JWT Filter e Permission Interceptor
+- **1.1.1** - `/actuator/**` deixa de ser público: só `health` e `info` (e `prometheus` via `security.actuator.prometheus-public`)

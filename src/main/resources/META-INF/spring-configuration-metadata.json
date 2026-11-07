@@ -10,6 +10,12 @@
       "type": "java.lang.Boolean",
       "description": "Enable permission interceptor",
       "defaultValue": true
+    },
+    {
+      "name": "security.actuator.prometheus-public",
+      "type": "java.lang.Boolean",
+      "description": "Libera /actuator/prometheus sem token (so com bloqueio do path no ingress; acesso apenas pela rede interna). Health e info sao sempre publicos; os demais endpoints do actuator exigem autenticacao.",
+      "defaultValue": false
     }
   ]
 }
