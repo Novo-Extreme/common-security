@@ -4,6 +4,7 @@ package br.com.vonex.common.security.config;
 import br.com.vonex.common.security.config.filter.SecurityFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -41,9 +42,29 @@ public class SecurityConfig {
             "/webjars/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/actuator/**",
             "/error"
     };
+
+    /**
+     * Unicos endpoints do actuator liberados sem token: probes do Kubernetes (health/liveness/readiness)
+     * e info. Os demais (env, configprops, beans, heapdump, loggers, metrics, prometheus...) exigem
+     * autenticacao, porque o ingress expoe {@code /<servico>/actuator/**} para a internet.
+     */
+    static final String[] PUBLIC_ACTUATOR_ENDPOINTS = {
+            "/actuator/health",
+            "/actuator/health/**",
+            "/actuator/info"
+    };
+
+    static final String PROMETHEUS_ENDPOINT = "/actuator/prometheus";
+
+    /**
+     * Libera {@code /actuator/prometheus} sem token para o Prometheus do cluster raspar.
+     * Ligar so junto com o bloqueio de {@code /<servico>/actuator/prometheus} no ingress
+     * (o endpoint deve ficar acessivel apenas pela rede interna).
+     */
+    @Value("${security.actuator.prometheus-public:false}")
+    private boolean prometheusPublic;
 
     @Bean
     @ConditionalOnMissingBean
@@ -60,11 +81,21 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(publicActuatorEndpoints()).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    String[] publicActuatorEndpoints() {
+        if (!prometheusPublic) {
+            return PUBLIC_ACTUATOR_ENDPOINTS;
+        }
+        String[] endpoints = Arrays.copyOf(PUBLIC_ACTUATOR_ENDPOINTS, PUBLIC_ACTUATOR_ENDPOINTS.length + 1);
+        endpoints[PUBLIC_ACTUATOR_ENDPOINTS.length] = PROMETHEUS_ENDPOINT;
+        return endpoints;
     }
 
     @Bean
